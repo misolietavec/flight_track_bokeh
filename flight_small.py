@@ -18,7 +18,7 @@ pn.extension()
 x_range, y_range = get_extent()
 
 # init bokeh column data source
-rel_df = get_flights_df("mikeslov", "notbkk12")
+rel_df = get_flights_df("", "")
 flight_dict = rel_df.to_dict(orient='list')
 flight_source = ColumnDataSource(flight_dict)
 
@@ -27,9 +27,10 @@ def update():
     # UPDATE BOKEH DATASOURCE 
     rel_df = get_flights_df("mikeslov", "notbkk12")
     flight_source.data = rel_df.to_dict(orient='list')
+    pn.io.push_notebook(bk_pane)
 
 
-pn.state.add_periodic_callback(update, 6000)  # 6000 ms
+pn.state.add_periodic_callback(update, 10500)  # 6000 ms for authenticated user
 
 p = figure(x_range=x_range, y_range=y_range, x_axis_type='mercator', y_axis_type='mercator',
            sizing_mode='scale_height', plot_width=900)
@@ -47,4 +48,9 @@ my_hover.tooltips = [('Call sign', '@callsign'), ('Origin Country', '@origin_cou
 p.add_tools(my_hover)
 
 curdoc().title = 'REAL TIME FLIGHT TRACKING'
-pn.panel(p).servable()
+
+bk_pane = pn.panel(p).servable()
+
+# %%
+# only for notebook, not for panel serve ...
+bk_pane

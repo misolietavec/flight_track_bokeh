@@ -32,9 +32,9 @@ def wgs84_web_mercator_point(lon, lat):
     return x, y
 
 # %%
-# AREA EXTENT COORDINATE WGS84
-lon_min, lat_min = 16, 48
-lon_max, lat_max = 17, 48.5
+# AREA EXTENT COORDINATE WGS84, Slovakia
+lon_min, lat_min = 18, 48
+lon_max, lat_max = 20, 50
 
 # %%
 # COORDINATE CONVERSION
@@ -46,12 +46,12 @@ xy_max = wgs84_web_mercator_point(lon_max, lat_max)
 x_range, y_range = [xy_min[0], xy_max[0]], [xy_min[1], xy_max[1]]
 
 # %%
-# REST API QUERY URL
-user_name = 'mikeslov'
-password = 'notbkk12'
-authdata = f'{username}:{password}'
-base_req = 'opensky-network.org/api/states/all?lamin={lat_min}&lomin={lon_min}&lamax={lat_max}&lomax={lon_max}'
-url_data = f'https://{authdata}@{base_req}' if authdata else f'https://{base_req}'
+# REST API QUERY URL, replace with your username and pasword on opensky-net
+user_name = ''
+password = ''
+authdata = f'{user_name}:{password}'
+base_req = f'opensky-network.org/api/states/all?lamin={lat_min}&lomin={lon_min}&lamax={lat_max}&lomax={lon_max}'
+url_data = f'https://{authdata}@{base_req}' if authdata != ':' else f'https://{base_req}'
 
 # %%
 # FLIGHT TRACKING
@@ -63,6 +63,7 @@ flight_keys = ('icao24', 'callsign', 'origin_country', 'time_position', 'last_co
 flight_dict = {k: [] for k in flight_keys}
 flight_source = ColumnDataSource(flight_dict)
 
+
 def update():
     response = requests.get(url_data).json()
 
@@ -72,7 +73,7 @@ def update():
     flight_df = pd.DataFrame(response['states']) 
     flight_df = flight_df.loc[:,0:16] 
     flight_df.columns = col_names
-    wgs84_to_web_mercator(flight_df)
+    flight_df = wgs84_to_web_mercator(flight_df)
     flight_df = flight_df.fillna('No Data')
     flight_df['rot_angle'] = -flight_df['true_track']
     icon_url = 'https://feelmath.eu/Download/airplane.png' #icon url
@@ -80,8 +81,10 @@ def update():
 
     # UPDATE BOKEH DATASOURCE 
     flight_source.data = flight_df.to_dict(orient='list')
+    pn.io.push_notebook(bk_pane)
 
-pn.state.add_periodic_callback(update, 6000)  # 6000 ms
+
+pn.state.add_periodic_callback(update, 10500)  # can be 6000 ms for authenticated user
 
 # PLOT AIRCRAFT POSITION
 p = figure(x_range=x_range, y_range=y_range, x_axis_type='mercator', y_axis_type='mercator', 
@@ -101,4 +104,8 @@ my_hover.tooltips = [('Call sign', '@callsign'), ('Origin Country', '@origin_cou
 p.add_tools(my_hover)
 
 curdoc().title = 'REAL TIME FLIGHT TRACKING'
-pn.panel(p).servable()
+bk_pane = pn.panel(p).servable()
+
+# %%
+# only needed for notebook, not for panel serve ...
+bk_pane
