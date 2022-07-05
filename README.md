@@ -9,8 +9,10 @@ development with interactive widgets from pyviz panel.
 It is assumed that you have jupytext extension installed and configured for
 paired notebooks. This is my configuration:
 
-```# Always pair ipynb notebooks to py:percent files
-formats = "ipynb,py:percent"```
+```python
+# Always pair ipynb notebooks to py:percent files
+formats = "ipynb,py:percent"
+```
 
 (see jupytext documentation). You can then open .py files as Jupyter
 notebooks.
