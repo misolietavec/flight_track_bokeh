@@ -19,11 +19,15 @@ import numpy as np
 from math import log, tan, pi
 
 # %%
-slovensko = [48,50,18,21]  # pridat ine, okolie letisk napr.
+slovensko = [48, 50, 18, 21]  # pridat ine, okolie letisk napr.
+europe = [35, 60, -10, 30]
 icon_url = 'https://feelmath.eu/Download/airplane.png' #icon url
 flight_keys = ('icao24', 'callsign', 'origin_country', 'time_position', 'last_contact', 'long', 'lat', 'baro_altitude', 'on_ground',
                'velocity', 'true_track', 'vertical_rate', 'sensors', 'geo_altitude', 'squawk', 'spi', 'position_source')
-
+usr = 'mikeslov'
+pwd = 'notbkk12'
+anames = pd.read_csv("airlines_small.csv")
+airlines = dict(zip(anames['icao'],anames['name']))
 
 # %%
 # FUNCTION TO CONVERT GCS WGS84 TO WEB MERCATOR, DATAFRAME
@@ -44,16 +48,17 @@ def wgs84_web_mercator_point(lon, lat):
 
 
 # %%
-def get_extent(georect=slovensko):
+def get_extent(georect=europe):
     lat_min, lat_max, lon_min, lon_max = georect
     xy_min = wgs84_web_mercator_point(lon_min, lat_min)
     xy_max = wgs84_web_mercator_point(lon_max, lat_max)
     x_range, y_range = [xy_min[0], xy_max[0]], [xy_min[1], xy_max[1]]
-    return x_range, y_range
+    ratio = (y_range[1] - y_range[0]) / (x_range[1] - x_range[0])
+    return x_range, y_range, ratio
 
 
 # %%
-def get_flights_states(user_name='', password='', georect=slovensko):
+def get_flights_states(user_name=usr, password=pwd, georect=europe):
     authdata = f'{user_name}:{password}'
     lat_min, lat_max, lon_min, lon_max = georect
     base_req = f'opensky-network.org/api/states/all?lamin={lat_min}&lomin={lon_min}&lamax={lat_max}&lomax={lon_max}'
@@ -63,12 +68,18 @@ def get_flights_states(user_name='', password='', georect=slovensko):
 
 
 # %%
-def get_flights_df(user_name='', password='', georect=slovensko):
+def get_flights(user_name=usr, password=pwd, georect=europe, as_DF=True):
     states = get_flights_states(user_name, password, georect)
     df = pd.DataFrame(states)
     df.columns = flight_keys
-    df_rel = df[['callsign','origin_country','baro_altitude','on_ground','velocity']].copy()
+    df_rel = df[['origin_country','baro_altitude','on_ground','velocity']].copy()
+    df_rel['airline'] = [air_from_callsign(p) for p in df['callsign'].values]
     df_rel['x'], df_rel['y'] = wgs84_to_web_mercator(df)
     df_rel['rot_angle'] = -df['true_track']
     df_rel['url'] = icon_url
-    return df_rel
+    return df_rel if as_DF else df_rel.to_dict(orient='list')
+
+
+# %%
+def air_from_callsign(cstr):
+    return airlines.get(cstr[:3],"NotFound")
