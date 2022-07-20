@@ -28,6 +28,7 @@ usr = ''
 pwd = ''
 anames = pd.read_csv("airlines_small.csv")
 airlines = dict(zip(anames['icao'],anames['name']))
+eu_airlines = {"Všetko": "AllAir", "Pegasus": "PGT", "Wizz Air": "WZZ", "Turkish Airlines": "THY", "Ryanair": "RYR"}
 
 # %%
 # FUNCTION TO CONVERT GCS WGS84 TO WEB MERCATOR, DATAFRAME
@@ -68,18 +69,25 @@ def get_flights_states(user_name=usr, password=pwd, georect=europe):
 
 
 # %%
-def get_flights(user_name=usr, password=pwd, georect=europe, as_DF=True):
+def get_flights(user_name=usr, password=pwd, georect=europe):
     states = get_flights_states(user_name, password, georect)
     df = pd.DataFrame(states)
     df.columns = flight_keys
     df_rel = df[['origin_country','baro_altitude','on_ground','velocity']].copy()
     df_rel['airline'] = [air_from_callsign(p) for p in df['callsign'].values]
+    df_rel['icao'] = [p[:3] for p in df['callsign']]
     df_rel['x'], df_rel['y'] = wgs84_to_web_mercator(df)
     df_rel['rot_angle'] = -df['true_track']
-    df_rel['url'] = icon_url
-    return df_rel if as_DF else df_rel.to_dict(orient='list')
+    return df_rel
 
 
 # %%
 def air_from_callsign(cstr):
     return airlines.get(cstr[:3],"NotFound")
+
+
+# %%
+def filter_flights(f_df,vyber='AllAir'):
+    if vyber != 'AllAir':
+        f_df = f_df[f_df['icao'] == vyber]
+    return f_df.to_dict(orient='list')

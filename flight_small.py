@@ -27,7 +27,7 @@ def update():
     pn.io.push_notebook(bk_pane)
 
 
-pn.state.add_periodic_callback(update, 6000);  # 6000 ms for authenticated user
+pn.state.add_periodic_callback(update, 10500);  # 6000 ms for authenticated user
 
 # %%
 # DISPLAY ON MAP
